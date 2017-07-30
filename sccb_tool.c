@@ -11,6 +11,10 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
+#include <stdint.h>
+
+#define OV490_BANK_HIGH			0xfffd
+#define OV490_BANK_LOW			0xfffe
 
 enum xfer_state{
 	READ = 0, 
@@ -42,6 +46,82 @@ static void display_menu(void){
 
 
 
+}
+
+/* read a register with 16bit address */
+static int i2c_sccb_reg_read(uint16_t reg, uint8_t *val)
+{
+	int ret;
+	int buf = 0;
+	uint8_t data[2] = { reg >> 8, reg & 0xff };
+	
+	if (write(file, data, 2) != 2){
+		printf("Failed writing register 0x%04x!\n", reg);
+		return -1;
+	}
+ 
+	if (read(file, &buf, 1) != 1)
+		goto err;
+ 
+	*val = (uint8_t)buf;
+	return 0;
+err:
+	printf("Failed reading register 0x%04x!\n", reg);
+	return ret;
+}
+ 
+/* write data byte to a register with 16bit address */
+static int i2c_sccb_reg_write(uint16_t reg, uint8_t val)
+{
+	int ret;
+	uint8_t data[3] = { reg >> 8, reg & 0xff, val };
+ 
+	if (write(file, data, 3) != 3){
+		printf("Failed writing register 0x%04x!\n", reg);
+		return -1;
+	}
+ 
+	return 0;
+}
+ 
+/* write and read 32 bit registers */
+ 
+static int i2c_sccb_reg_read32(uint32_t reg, uint8_t *val)
+{
+	uint8_t bank_high = (reg >> 24) & 0xff;
+	uint8_t bank_low  = (reg >> 16) & 0xff;
+	uint16_t reg_addr = reg & 0xffff;
+	int ret = 0;
+ 
+	/* For writing a register with 32 bit address, First set the bank
+	 * address by writing to two BANK address registers. Then access
+	 * the register using 16LSB bits.
+	 */
+	ret = i2c_sccb_reg_write(OV490_BANK_HIGH, bank_high);
+	if (!ret)
+		ret = i2c_sccb_reg_write(OV490_BANK_LOW, bank_low);
+	if (!ret)
+		ret = i2c_sccb_reg_read(reg_addr, val);
+	return ret;
+}
+ 
+static int i2c_sccb_reg_write32(uint32_t reg, uint8_t val)
+{
+	uint8_t bank_high = (reg >> 24) & 0xff;
+	uint8_t bank_low  = (reg >> 16) & 0xff;
+	uint16_t reg_addr = reg & 0xffff;
+	int ret = 0;
+ 
+	/* For writing a register with 32 bit address, First set the bank
+	 * address by writing to two BANK address registers. Then access
+	 * the register using 16LSB bits.
+	 */
+	ret = i2c_sccb_reg_write(OV490_BANK_HIGH, bank_high);
+	if (!ret)
+		ret = i2c_sccb_reg_write(OV490_BANK_LOW, bank_low);
+	if (!ret)
+		ret = i2c_sccb_reg_write(reg_addr, val);
+	return ret;
 }
 
 static int write_sccb_register(int register_address, int register_value, enum reg_size data_width){
