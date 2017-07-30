@@ -11,6 +11,7 @@ int file = -1;
 int adapter_nr = 2; /* probably dynamically determined */
 char filename[20];
 int parsed = -1;
+int readwrite = -1;
 
 static struct option long_options[] = {
     {"write", required_argument, 0,'w'},
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]){
         	case 'w':
         	{     	
         		printf("Write Sensor\n"); 
+        		readwrite = 1;
 	            index = optind-1;
 	
         		int n = 4;		
@@ -128,16 +130,6 @@ int main(int argc, char *argv[]){
         					goto error_handler;
         				break;
         			}
-
-
-					//int number = (int)strtol(optarg, NULL, 0);
-					//printf("set adapter to 0x%04X\n", number);
-
-	            	//printf("optargs: %s\n", optarg);
-					//l=(int)atoi(optarg);
-					//adapter_nr = (int) l;
-					//printf("set adapter to %d\n", adapter_nr);
-
             		
             		n--;
             		index++;
@@ -148,6 +140,7 @@ int main(int argc, char *argv[]){
         	case 'r':
         	{
         		printf("Read Sensor\n"); 
+        		readwrite = 0;
 	            index = optind-1;
 	
         		int n = 3;		
@@ -217,10 +210,15 @@ int main(int argc, char *argv[]){
 
 	if(parsed){
 
-		printf("Run function\n");
+		printf("Run function ");
+		if(readwrite){
+			printf("write \n");
+		}else{
+			printf("read \n");
+		}
 		return 0;
 	}
-	
+
 error_handler:
         		
     display_menu();
