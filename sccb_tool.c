@@ -8,7 +8,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
+#include <sys/ioctl.h>
 
 enum xfer_state{
 	READ = 0, 
@@ -239,6 +241,15 @@ int main(int argc, char *argv[]){
 		    perror("Failed to open the i2c bus");
 		    exit(1);
 		}
+
+		/* open device to communicate with */
+		if (ioctl(file, I2C_SLAVE, dev_addr) < 0) {
+			/* ERROR HANDLING; you can check errno to see what went wrong */
+			printf("Error setting slave device\n");
+			close(file);
+			exit(1);
+		}
+
 
 		printf("Run function ");
 		if(readwrite == WRITE){
