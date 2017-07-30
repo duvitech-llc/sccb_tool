@@ -7,9 +7,10 @@
 #include <stdlib.h>
 
 
-int file;
+int file = -1;
 int adapter_nr = 2; /* probably dynamically determined */
 char filename[20];
+int parsed = -1;
 
 static struct option long_options[] = {
     {"write", required_argument, 0,'w'},
@@ -85,16 +86,36 @@ int main(int argc, char *argv[]){
 	            	printf("index: %d\n", index);
 	            	if(index>=argc){
 	            		printf("Error not enough args\n");
-						break;
+        				goto error_handler;
 	            	}
 
         			next = strdup(argv[index]);
         			switch(n){
         				case 4:
-	            			printf("Adapter: %d\n", atoi(next));
+        					adapter_nr = atoi(next);
+	            			printf("Adapter: %d\n", adapter_nr);
         				break;
         				case 3:
+        					switch((char)*next){
+        						case 'w':
+        						case 'W':
+									printf("32-bit size selected\n");
+        						break;
+        						case 's':
+        						case 'S':
+									printf("16-bit size selected\n");
+        						break;
+        						case 'b':
+        						case 'B':
+									printf("8-bit size selected\n");
+        						break;        						
+        						default:
+									printf("Invalid size opiton\n");
+        						break;
+        					}
+	            			
 	            			printf("Reg_Size: %s\n", next);
+
         				break;
         				case 2:
 	            			printf("Reg: 0x%08X\n", (int)strtol(next, NULL, 0));
@@ -104,6 +125,7 @@ int main(int argc, char *argv[]){
         				break;
         				default:
         					printf("default handler error!!!!\n");
+        					goto error_handler;
         				break;
         			}
 
@@ -134,16 +156,36 @@ int main(int argc, char *argv[]){
 	            	printf("index: %d\n", index);
 	            	if(index>=argc){
 	            		printf("Error not enough args\n");
-						break;
+        				goto error_handler;
 	            	}
 
         			next = strdup(argv[index]);
         			switch(n){
         				case 3:
-	            			printf("Adapter: %d\n", atoi(next));
+        					adapter_nr = atoi(next);
+	            			printf("Adapter: %d\n", adapter_nr);
         				break;
         				case 2:
+        					switch((char)*next){
+        						case 'w':
+        						case 'W':
+									printf("32-bit size selected\n");
+        						break;
+        						case 's':
+        						case 'S':
+									printf("16-bit size selected\n");
+        						break;
+        						case 'b':
+        						case 'B':
+									printf("8-bit size selected\n");
+        						break;        						
+        						default:
+									printf("Invalid size opiton\n");
+        						break;
+        					}
+	            			
 	            			printf("Reg_Size: %s\n", next);
+
         				break;
         				case 1:
 	            			printf("Reg: 0x%08X\n", (int)strtol(next, NULL, 0));
@@ -161,18 +203,27 @@ int main(int argc, char *argv[]){
         	break;
             case -1:
             	if(arg_count == 0)
-        			display_menu();
+    				goto error_handler;
+				parsed = 1;
             break;
             case 0:
         	case 'h':
         	default:
-        		display_menu();
+        		goto error_handler;
         	break;
         }
 		arg_count++;
 	}
 
+	if(parsed){
 
+		printf("Run function\n");
+		return 0;
+	}
+	
+error_handler:
+        		
+    display_menu();
 
 	return ret;
 }
