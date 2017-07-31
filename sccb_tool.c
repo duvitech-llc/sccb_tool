@@ -126,7 +126,26 @@ static int i2c_sccb_reg_write32(uint32_t reg, uint8_t val)
 
 static int write_sccb_register(int register_address, int register_value, enum reg_size data_width){
 	int ret = 0;
-
+	printf("Register: ")
+	switch(data_width){
+		case WORD_REG:	
+			printf("0x%08X ", register_address);		
+			ret = i2c_sccb_reg_write32(register_address, register_value);
+		break;
+		case SHORT_REG:
+			printf("0x%04X ", register_address);		
+			ret = i2c_sccb_reg_write(register_address, register_value);
+		break;
+		case BYTE_REG:
+		default:
+			printf("\n Byte or Unknown register size not supported \n");
+			ret = 1;
+		break;
+	}
+	
+	if(!ret){
+		printf("Written");
+	}
 
 	return ret;
 }
@@ -134,7 +153,25 @@ static int write_sccb_register(int register_address, int register_value, enum re
 
 static int read_sccb_register(int register_address, int* register_value, enum reg_size data_width){
 	int ret = 0;
+	switch(data_width){
+		case WORD_REG:		
+			printf("0x%08X ", register_address);		
+			i2c_sccb_reg_read32(register_address, register_value);
+		break;
+		case SHORT_REG:
+			printf("0x%04X ", register_address);	
+			i2c_sccb_reg_read(register_address, register_value);
+		break;
+		case BYTE_REG:
+		default:
+			printf("\n Byte or Unknown register size not supported \n");
+			ret = 1;
+		break;
+	}
 
+	if(!ret){
+		printf("Value: 0x%02X", register_value);
+	}
 
 	return ret;
 }
@@ -334,14 +371,14 @@ int main(int argc, char *argv[]){
 		printf("Run function ");
 		if(readwrite == WRITE){
 			printf("write \n");
-			if(write_sccb_register(reg_addr, reg_val, datawidth) == -1){
+			if(write_sccb_register(reg_addr, reg_val, datawidth)){
 				printf("Failed to write register\n");
 
-			}
+			}			
 		}else{
 			printf("read \n");
 			reg_val = 0;
-			if(read_sccb_register(reg_addr, &reg_val, datawidth) == -1){
+			if(read_sccb_register(reg_addr, &reg_val, datawidth)){
 				printf("Failed to read register\n");
 			}
 		}
