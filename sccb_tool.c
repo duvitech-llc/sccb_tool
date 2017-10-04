@@ -15,6 +15,7 @@
 
 #define OV490_BANK_HIGH			0xfffd
 #define OV490_BANK_LOW			0xfffe
+#define DEBUG_ON 1
 
 enum xfer_state{
 	READ = 0, 
@@ -42,7 +43,7 @@ static void display_menu(void){
     printf("\nSCCB Tool\n");
     printf("\nAdapter: 0-9\n");
     printf("\nRegister Size: w, s, b\n");    
-    printf("\nsccb -w:r <adapter> <dev_addr> <reg_size> <reg> <val>\n\n");
+    printf("\nsccb -w:r <adapter> <dev_addr> <reg_size> <address> <val>\n\n");
 
 
 
@@ -92,7 +93,7 @@ static int i2c_sccb_reg_read32(uint32_t reg, uint8_t *val)
 	uint8_t bank_low  = (reg >> 16) & 0xff;
 	uint16_t reg_addr = reg & 0xffff;
 	int ret = 0;
- 
+
 	/* For writing a register with 32 bit address, First set the bank
 	 * address by writing to two BANK address registers. Then access
 	 * the register using 16LSB bits.
@@ -102,6 +103,19 @@ static int i2c_sccb_reg_read32(uint32_t reg, uint8_t *val)
 		ret = i2c_sccb_reg_write(OV490_BANK_LOW, bank_low);
 	if (!ret)
 		ret = i2c_sccb_reg_read(reg_addr, val);
+
+	 
+	#if DEBUG_ON
+		printf("\n\n==> DEBUG  <==\n");
+		printf("Function: i2c_sccb_reg_read32\n");
+		printf("Params: reg=0x%08X\n", reg);
+		printf("\nBank High: 0x%02X\n", bank_high);
+		printf("Bank Low: 0x%02X\n", bank_low);
+		printf("Reg Addr: 0x%04X\n", reg_addr);
+		
+		printf("\nReturn Value: 0x%02X\n", *val);
+	#endif
+
 	return ret;
 }
  
@@ -121,19 +135,29 @@ static int i2c_sccb_reg_write32(uint32_t reg, uint8_t val)
 		ret = i2c_sccb_reg_write(OV490_BANK_LOW, bank_low);
 	if (!ret)
 		ret = i2c_sccb_reg_write(reg_addr, val);
+
+	#if DEBUG_ON
+		printf("\n\n==> DEBUG  <==\n");
+		printf("Function: i2c_sccb_reg_read32\n");
+		printf("Params: reg=0x%08X, val=0x%02X\n", reg, val);
+		printf("\nBank High: 0x%02X\n", bank_high);
+		printf("Bank Low: 0x%02X\n", bank_low);
+		printf("Reg Addr: 0x%04X\n", reg_addr);
+	#endif
+
 	return ret;
 }
 
 static int write_sccb_register(uint32_t register_address, uint8_t register_value, enum reg_size data_width){
 	int ret = 0;
-	printf("Register: ");
+	printf("Write Register: ");
 	switch(data_width){
 		case WORD_REG:	
 			printf("0x%08X ", register_address);		
 			ret = i2c_sccb_reg_write32(register_address, register_value);
 		break;
 		case SHORT_REG:
-			printf("0x%04X ", register_address);		
+			printf("0x%04X ", register_address);
 			ret = i2c_sccb_reg_write(register_address, register_value);
 		break;
 		case BYTE_REG:
@@ -144,7 +168,9 @@ static int write_sccb_register(uint32_t register_address, uint8_t register_value
 	}
 	
 	if(!ret){
-		printf("Written");
+		printf(" Value 0x%02X", register_value);
+	}else{
+		printf(" Value 0x%02X", register_value);
 	}
 
 	return ret;
@@ -154,6 +180,7 @@ static int write_sccb_register(uint32_t register_address, uint8_t register_value
 static int read_sccb_register(uint32_t register_address, uint8_t* register_value, enum reg_size data_width){
 	int ret = 0;
 	uint8_t val;
+	printf("Read Register: ");
 	switch(data_width){
 		case WORD_REG:		
 			printf("0x%08X ", register_address);		
@@ -172,7 +199,7 @@ static int read_sccb_register(uint32_t register_address, uint8_t* register_value
 
 	if(!ret){
 		*register_value = val;
-		printf("Value: 0x%02X\n", *register_value);
+		printf(" Value: 0x%02X\n", *register_value);
 	}
 
 	return ret;
@@ -196,21 +223,26 @@ int main(int argc, char *argv[]){
 	
 	int parsed = -1;
 
+#if DEBUG_ON
     printf("argc: %d\n", argc);
+#endif
 
     while (arg != -1) {
 	    arg = getopt(argc, argv, "w:r:h");
         switch (arg) {
         	case 'w':
         	{     	
-        		printf("Write Sensor\n"); 
+#if DEBUG_ON
+				printf("Write Sensor\n"); 
+#endif
         		readwrite = WRITE;
 	            index = optind-1;
 	
         		int n = 5;		
         		while(n>0){
-
-	            	printf("index: %d\n", index);
+#if DEBUG_ON
+					printf("index: %d\n", index);
+#endif
 	            	if(index>=argc){
 	            		printf("Error not enough args\n");
         				goto error_handler;
@@ -219,28 +251,38 @@ int main(int argc, char *argv[]){
         			next = strdup(argv[index]);
         			switch(n){
         				case 5:
-        					adapter_nr = atoi(next);
-	            			printf("Adapter: %d\n", adapter_nr);
+							adapter_nr = atoi(next);
+#if DEBUG_ON
+							printf("Adapter: %d\n", adapter_nr);
+#endif
         				break;
         				case 4:
-        					dev_addr = (int)strtol(next, NULL, 0);
-	            			printf("Device Address: 0x%02X\n", dev_addr);
+							dev_addr = (int)strtol(next, NULL, 0);
+#if DEBUG_ON
+							printf("Device Address: 0x%02X\n", dev_addr);
+#endif
         				break;
         				case 3:
         					switch((char)*next){
         						case 'w':
-        						case 'W':
+								case 'W':
+#if DEBUG_ON
 									printf("32-bit size selected\n");
+#endif
 									datawidth = WORD_REG;
         						break;
         						case 's':
-        						case 'S':
+								case 'S':
+#if DEBUG_ON
 									printf("16-bit size selected\n");
+#endif
 									datawidth = SHORT_REG;
         						break;
         						case 'b':
-        						case 'B':
+								case 'B':
+#if DEBUG_ON
 									printf("8-bit size selected\n");
+#endif
 									datawidth = BYTE_REG;
         						break;        						
         						default:
@@ -248,17 +290,21 @@ int main(int argc, char *argv[]){
 									datawidth = NOTSET_REG;
         						break;
         					}
-	            			
+#if DEBUG_ON
 	            			printf("Reg_Size: %s\n", next);
-
+#endif
         				break;
         				case 2:
-        					reg_addr = (uint32_t)strtol(next, NULL, 0);
-	            			printf("Reg: 0x%08X\n", reg_addr);
+							reg_addr = (uint32_t)strtoll(next, NULL, 0);
+#if DEBUG_ON
+							printf("Address: 0x%08X\n", reg_addr);
+#endif
         				break;
         				case 1:
-	            			reg_val = (uint8_t)strtol(next, NULL, 0);
-	            			printf("Val: 0x%02X\n", reg_val);
+							reg_val = (uint8_t)strtol(next, NULL, 0);
+#if DEBUG_ON
+							printf("Val: 0x%02X\n", reg_val);
+#endif							
         				break;
         				default:
         					printf("default handler error!!!!\n");
@@ -274,14 +320,17 @@ int main(int argc, char *argv[]){
         	break;
         	case 'r':
         	{
-        		printf("Read Sensor\n"); 
+#if DEBUG_ON				
+				printf("Read Sensor\n"); 
+#endif				
         		readwrite = READ;
 	            index = optind-1;
 	
         		int n = 4;		
         		while(n>0){
-
-	            	printf("index: %d\n", index);
+#if DEBUG_ON
+					printf("index: %d\n", index);
+#endif
 	            	if(index>=argc){
 	            		printf("Error not enough args\n");
         				goto error_handler;
@@ -290,28 +339,38 @@ int main(int argc, char *argv[]){
         			next = strdup(argv[index]);
         			switch(n){
         				case 4:
-        					adapter_nr = atoi(next);
-	            			printf("Adapter: %d\n", adapter_nr);
+							adapter_nr = atoi(next);
+#if DEBUG_ON						
+							printf("Adapter: %d\n", adapter_nr);
+#endif							
         				break;
         				case 3:
-        					dev_addr = (int)strtol(next, NULL, 0);
-	            			printf("Device Address: 0x%02X\n", dev_addr);
+							dev_addr = (int)strtol(next, NULL, 0);
+#if DEBUG_ON							
+							printf("Device Address: 0x%02X\n", dev_addr);
+#endif							
         				break;
         				case 2:
         					switch((char)*next){
         						case 'w':
-        						case 'W':
+								case 'W':
+#if DEBUG_ON								
 									printf("32-bit size selected\n");
+#endif									
 									datawidth = WORD_REG;
         						break;
         						case 's':
-        						case 'S':
+								case 'S':
+#if DEBUG_ON								
 									printf("16-bit size selected\n");
+#endif									
 									datawidth = SHORT_REG;
         						break;
         						case 'b':
-        						case 'B':
+								case 'B':
+#if DEBUG_ON								
 									printf("8-bit size selected\n");
+#endif									
 									datawidth = BYTE_REG;
         						break;        						
         						default:
@@ -319,13 +378,16 @@ int main(int argc, char *argv[]){
 									datawidth = NOTSET_REG;
         						break;
         					}
-	            			
-	            			printf("Reg_Size: %s\n", next);
+#if DEBUG_ON	            			
+							printf("Reg_Size: %s\n", next);
+#endif						
 
         				break;
         				case 1:
-        					reg_addr = (int)strtol(next, NULL, 0);
-	            			printf("Reg: 0x%08X\n", reg_addr);
+							reg_addr = (uint32_t)strtoll(next, NULL, 0);
+#if DEBUG_ON							
+							printf("Address: 0x%08X\n", reg_addr);
+#endif							
         				break;
         				default:
         					printf("default handler error!!!!\n");
@@ -362,26 +424,22 @@ int main(int argc, char *argv[]){
 		}
 
 		/* open device to communicate with */
-		if (ioctl(file, I2C_SLAVE, dev_addr) < 0) {
+		if (ioctl(file, I2C_SLAVE_FORCE, dev_addr) < 0) {
 			/* ERROR HANDLING; you can check errno to see what went wrong */
 			printf("Error setting slave device\n");
 			close(file);
 			exit(1);
 		}
 
-
-		printf("Run function ");
 		if(readwrite == WRITE){
-			printf("write \n");
 			if(write_sccb_register(reg_addr, reg_val, datawidth)){
-				printf("Failed to write register\n");
+				printf("\nFailed to write register\n");
 
 			}			
 		}else{
-			printf("read \n");
 			reg_val = 0;
 			if(read_sccb_register(reg_addr, &reg_val, datawidth)){
-				printf("Failed to read register\n");
+				printf("\nFailed to read register\n");
 			}
 		}
 
