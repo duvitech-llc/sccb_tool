@@ -124,9 +124,9 @@ static int i2c_sccb_reg_write32(uint32_t reg, uint8_t val)
 	return ret;
 }
 
-static int write_sccb_register(int register_address, int register_value, enum reg_size data_width){
+static int write_sccb_register(uint32_t register_address, uint8_t register_value, enum reg_size data_width){
 	int ret = 0;
-	printf("Register: ")
+	printf("Register: ");
 	switch(data_width){
 		case WORD_REG:	
 			printf("0x%08X ", register_address);		
@@ -151,16 +151,17 @@ static int write_sccb_register(int register_address, int register_value, enum re
 }
 
 
-static int read_sccb_register(int register_address, int* register_value, enum reg_size data_width){
+static int read_sccb_register(uint32_t register_address, uint8_t* register_value, enum reg_size data_width){
 	int ret = 0;
+	uint8_t val;
 	switch(data_width){
 		case WORD_REG:		
 			printf("0x%08X ", register_address);		
-			i2c_sccb_reg_read32(register_address, register_value);
+			i2c_sccb_reg_read32(register_address, &val);
 		break;
 		case SHORT_REG:
 			printf("0x%04X ", register_address);	
-			i2c_sccb_reg_read(register_address, register_value);
+			i2c_sccb_reg_read(register_address,  &val);
 		break;
 		case BYTE_REG:
 		default:
@@ -170,7 +171,8 @@ static int read_sccb_register(int register_address, int* register_value, enum re
 	}
 
 	if(!ret){
-		printf("Value: 0x%02X", register_value);
+		*register_value = val;
+		printf("Value: 0x%02X\n", *register_value);
 	}
 
 	return ret;
@@ -187,10 +189,10 @@ int main(int argc, char *argv[]){
 
 	enum xfer_state readwrite = NOTSET;
 	enum reg_size datawidth = NOTSET_REG;
-	int adapter_nr = 2; 
-	int dev_addr = 0x00;
-	int reg_addr = 0x00;
-	int reg_val = 0x00;
+	uint8_t adapter_nr = 2; 
+	uint8_t dev_addr = 0x00;
+	uint32_t reg_addr = 0x00;
+	uint8_t reg_val = 0x00;
 	
 	int parsed = -1;
 
@@ -251,11 +253,11 @@ int main(int argc, char *argv[]){
 
         				break;
         				case 2:
-        					reg_addr = (int)strtol(next, NULL, 0);
+        					reg_addr = (uint32_t)strtol(next, NULL, 0);
 	            			printf("Reg: 0x%08X\n", reg_addr);
         				break;
         				case 1:
-	            			reg_val = (int)strtol(next, NULL, 0);
+	            			reg_val = (uint8_t)strtol(next, NULL, 0);
 	            			printf("Val: 0x%02X\n", reg_val);
         				break;
         				default:
