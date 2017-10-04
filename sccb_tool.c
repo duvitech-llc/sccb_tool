@@ -168,9 +168,7 @@ static int write_sccb_register(uint32_t register_address, uint8_t register_value
 	}
 	
 	if(!ret){
-		printf(" Value 0x%02X", register_value);
-	}else{
-		printf(" Value 0x%02X", register_value);
+		printf(" Value 0x%02X\n", register_value);
 	}
 
 	return ret;
